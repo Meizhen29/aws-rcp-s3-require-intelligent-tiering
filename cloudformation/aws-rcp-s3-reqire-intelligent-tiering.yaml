@@ -1,0 +1,502 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: |-
+  Resource control policy requiring specific storage class in tagged S3 buckets
+  github.com/sqlxpert/aws-rcp-s3-require-intelligent-tiering
+  GPLv3, Copyright Paul Marcelin
+
+Parameters:
+
+  PlaceholderSuggestedStackName:
+    Type: String
+    Default: "S3RequireIntelligentTiering"
+
+  PlaceholderHelp:
+    Type: String
+    Default: "github.com/sqlxpert/aws-rcp-s3-require-intelligent-tiering"
+
+  EnableRcp:
+    Type: String
+    Description: >-
+      Whether to apply the resource control policy to its designated targets.
+      The default is true . Change this to false to detach the RCP but preserve
+      the list of its targets.
+    Default: "true"
+    AllowedValues:
+      - "false"
+      - "true"
+
+  RcpTargetIds:
+    Type: String
+    Description: >-
+      Up to 100 r- root ID strings, ou- organizational unit ID strings, and/or
+      AWS account ID numbers to which the RCP will apply. Separate multiple
+      targets with commas but no spaces. To view the RCP before applying it,
+      leave this blank (the default), or start with EnableRcp set to false .
+      Exercise caution when applying any RCP, but note that this RCP generally
+      does not affect pre-existing S3 buckets; it only affects S3 buckets with
+      designated tags.
+    Default: ""
+
+  PlaceholderAdvancedParameters:
+    Type: String
+    Default: ""
+    AllowedValues:
+      - ""
+
+  RequireS3StorageClass:
+    Type: String
+    Description: >-
+      Storage class in which objects in tagged S3 buckets must be created.
+      Recommended: INTELLIGENT_TIERING (the default in this template).
+      Not recommended: STANDARD_IA , ONEZONE_IA or GLACIER_IR ; use
+      INTELLIGENT_TIERING .
+      Requires asynchronous retrieval: GLACIER or DEEP_ARCHIVE .
+      Suitable if you use this template for permissions rather than cost
+      management: STANDARD (the default in S3, except for replication).
+      Effectively deprecated: REDUCED_REDUNDANCY .
+      See
+      https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html#AmazonS3-PutObject-request-header-StorageClass
+    Default: INTELLIGENT_TIERING
+    AllowedValues:
+      - INTELLIGENT_TIERING
+      - STANDARD_IA
+      - GLACIER_IR
+      - GLACIER
+      - DEEP_ARCHIVE
+      - STANDARD
+      - ONEZONE_IA
+      - REDUCED_REDUNDANCY
+
+  S3BucketTagKeyStrict:
+    Type: String
+    Description: >-
+      S3 bucket tag key to require that all objects be created in the
+      designated storage class.
+      To activate, make sure that the AWS account is subject to the RCP, then
+      enable attribute-bassed access control for the bucket and apply this tag
+      to the bucket. (The tag value is ignored.)
+      Do not apply this tag to a bucket that is the destination of a
+      replication rule, unless the rule also specifies the correct storage
+      class.
+      For bucket tag rules, see
+      https://docs.aws.amazon.com/AmazonS3/latest/userguide/tagging.html
+      . For ABAC, see
+      https://docs.aws.amazon.com/AmazonS3/latest/userguide/buckets-tagging-enable-abac.html
+      . For replication storage class, see
+      https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication-add-config.html#storage-class-configuration
+    Default: "cost-s3-require-storage-class-intelligent-tiering"
+
+  S3BucketTagKeyPermissive:
+    Type: String
+    Description: >-
+      S3 bucket tag key to require that objects without the overriding S3
+      object tag be created in the designated storage class.
+      To activate, make sure that the AWS account is subject ot the RCP, then
+      enable ABAC for the bucket and apply this tag to the bucket. (The tag
+      value is ignored.)
+      Do not apply this tag to a bucket that is the destination of a
+      replication rule, unless the rule also specifies the correct storage
+      class.
+      This permissive bucket tag key must be different from its non-overridable
+      counterpart.
+      Recommended: Copy S3BucketTagKeyStrict and append a suffix.
+    Default: "cost-s3-require-storage-class-intelligent-tiering-override-with-object-tag"
+
+  S3ObjectTagKeyOverrideBucketTag:
+    Type: String
+    Description: >-
+      S3 object tag key to override the required storage class in a bucket
+      tagged with the permissive bucket key, S3BucketTagKeyPermissive . To
+      create an object in a different storage class, set this object tag in the
+      request to create the object, and in every request to overwrite the
+      object or create a new version.
+      For object tag rules, see
+      https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-tagging.html
+    Default: "cost-s3-override-storage-class-intelligent-tiering"
+
+  EnableScp:
+    Type: String
+    Description: >-
+      Whether to apply the service control policy (if generated) to its
+      designated targets. The default is true . Change this to false to detach
+      the SCP but preserve the list of its targets.
+    Default: "true"
+    AllowedValues:
+      - "false"
+      - "true"
+
+  ScpTargetIds:
+    Type: String
+    Description: >-
+      Up to 100 r- root ID strings, ou- organizational unit ID strings, and/or
+      AWS account ID numbers to which the SCP (if generated) will apply.
+      Separate multiple targets with commas but no spaces. You may wish to
+      apply the SCP, which restricts S3 bucket tag and ABAC changes, to a
+      target before applying the RCP, which actually enforces the required
+      storage class in tagged buckets. In some organizational units, you might
+      want the benefit of the RCP but give all users control over S3 bucket
+      tags and ABAC by not applying the SCP. To view the SCP before applying
+      it, leave this blank (the default), or start with EnableScp set to false
+      . Exercise caution when applying this SCP, because it generally does
+      reduce existing permissions.
+    Default: ""
+
+  ScpPrincipalCondition:
+    Type: String
+    Description: >-
+      One or more condition expressions determining which roles (or other IAM
+      principals) are still allowed to set/change/remove the designated S3
+      bucket tags and enable/disable ABAC, for buckets in AWS accounts subject
+      to the SCP. Separate multiple elements with a comma.
+      The default,
+      '"ArnNotLike": { "aws:PrincipalArn": "arn:aws:iam::*:role/manage-s3" }',
+      means that requests to change ABAC or the designated tags are denied
+      unless made by the manage-s3 role. (Separately, you would have to grant
+      the manage-s3 role permission to read and change S3 bucket properties
+      like tags and ABAC.)
+      To avoid generating the SCP, leave this blank.
+      "Null", "ForAnyValue:StringEquals" and "ForAllValues:StringNotEquals" are
+      forbidden; to use these condition operators, write a custom policy.
+      For condition keys, see
+      https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-principal-properties
+      . For operators, see
+      https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_condition_operators.html
+    Default: '"ArnNotLike": { "aws:PrincipalArn": "arn:aws:iam::*:role/manage-s3" }'
+    AllowedPattern: '^(?!.*"(Null|ForAnyValue:StringEquals|ForAllValues:StringNotEquals)").*$'
+    ConstraintDescription: >-
+      "Null", "ForAnyValue:StringEquals" and "ForAllValues:StringNotEquals" are
+      forbidden. To use these condition operators, write a custom policy.
+
+Metadata:
+
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: For Reference
+        Parameters:
+          - PlaceholderSuggestedStackName
+          - PlaceholderHelp
+      - Label:
+          default: Essential
+        Parameters:
+          - EnableRcp
+          - RcpTargetIds
+      - Label:
+          default: Advanced...
+        Parameters:
+          - PlaceholderAdvancedParameters
+      - Label:
+          default: >-
+            Resource control policy (require specific storage class for new S3
+            objects)
+        Parameters:
+          - RequireS3StorageClass
+          - S3BucketTagKeyStrict
+          - S3BucketTagKeyPermissive
+          - S3ObjectTagKeyOverrideBucketTag
+      - Label:
+          default: >-
+            Service control policy (restrict S3 bucket tag and ABAC changes)
+        Parameters:
+          - EnableScp
+          - ScpTargetIds
+          - ScpPrincipalCondition
+    ParameterLabels:
+      PlaceholderSuggestedStackName:
+        default: Suggested stack name
+      PlaceholderHelp:
+        default: For help with this stack, see
+      EnableRcp:
+        default: Enable RCP?
+      RcpTargetIds:
+        default: RCP Root IDs, OU IDs, and/or AWS account ID numbers
+      PlaceholderAdvancedParameters:
+        default: Do not change the parameters below unless necessary!
+      RequireS3StorageClass:
+        default: Required storage class
+      S3BucketTagKeyStrict:
+        default: Bucket tag to require the storage class for all new objects
+      S3BucketTagKeyPermissive:
+        default: Bucket tag to require the storage class but permit overrides
+      S3ObjectTagKeyOverrideBucketTag:
+        default: Object tag to override the required storage class
+      EnableScp:
+        default: Enable SCP?
+      ScpTargetIds:
+        default: SCP Root IDs, OU IDs, and/or AWS account ID numbers
+      ScpPrincipalCondition:
+        default: Condition for IAM roles allowed to change S3 bucket tags, ABAC
+
+Rules:
+
+  S3BucketTagKeysDiffer:
+    Assertions:
+      - AssertDescription: >-
+          S3BucketTagKeyPermissive must be different from S3BucketTagKeyStrict
+        Assert: !Not
+          - !Equals
+            - !Ref S3BucketTagKeyPermissive
+            - !Ref S3BucketTagKeyStrict
+
+Conditions:
+
+  EnableRcpTrue: !And
+    - !Equals [ !Ref EnableRcp, "true" ]
+    - !Not [ !Equals [ !Ref RcpTargetIds, "" ] ]
+
+  ScpPrincipalConditionNotBlank:
+    !Not [ !Equals [ !Ref ScpPrincipalCondition, "" ] ]
+
+  EnableScpTrue: !And
+    - !Condition ScpPrincipalConditionNotBlank
+    - !Equals [ !Ref EnableScp, "true" ]
+    - !Not [ !Equals [ !Ref ScpTargetIds, "" ] ]
+
+Resources:
+
+  RcpS3BucketRequireStorageClass:
+    Type: AWS::Organizations::Policy
+    Properties:
+      Type: RESOURCE_CONTROL_POLICY
+      Name: !Sub "S3BucketRequireStorageClass-${AWS::StackName}"
+      Tags:
+        - Key: StackName  # No automatic CloudFormation tags, as of 2026-03
+          Value: !Ref AWS::StackName
+        - Key: Source
+          Value: "github.com/sqlxpert/aws-rcp-s3-require-intelligent-tiering"
+        - Key: Rights
+          Value: "GPLv3. Copyright Paul Marcelin."
+      Description: !Sub >-
+        S3 bucket tagged "${S3BucketTagKeyStrict}": Require that all objects
+        be created in the ${RequireS3StorageClass} storage class. ABAC must be
+        enabled for the bucket. Bucket tagged "${S3BucketTagKeyPermissive}":
+        Override by tagging an object "${S3ObjectTagKeyOverrideBucketTag}" on
+        creation. GPLv3. Copyright Paul Marcelin ( github.com/sqlxpert ).
+      TargetIds: !If
+        - EnableRcpTrue
+        - [ !Ref RcpTargetIds ]
+        - !Ref AWS::NoValue
+      Content: !Sub >-
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "S3BucketRequireStorageClass",
+              "Effect": "Deny",
+              "Principal": "*",
+              "Action": "s3:PutObject",
+              "Resource": "*",
+              "Condition": {
+                "Null": {
+                  "s3:BucketTag/${S3BucketTagKeyStrict}": false,
+                  "s3:BucketTag/${S3BucketTagKeyPermissive}": true
+                },
+                "StringNotEquals": {
+                  "s3:x-amz-storage-class": "${RequireS3StorageClass}"
+                }
+              }
+            },
+            {
+              "Sid": "S3BucketRequireStorageClassButPermitObjectOverride",
+              "Effect": "Deny",
+              "Principal": "*",
+              "Action": "s3:PutObject",
+              "Resource": "*",
+              "Condition": {
+                "Null": {
+                  "s3:BucketTag/${S3BucketTagKeyPermissive}": false
+                },
+                "StringNotEquals": {
+                  "s3:x-amz-storage-class": "${RequireS3StorageClass}"
+                },
+                "ForAllValues:StringNotEquals": {
+                  "s3:RequestObjectTagKeys": "${S3ObjectTagKeyOverrideBucketTag}"
+                }
+              }
+            }
+          ]
+        }
+
+  ScpS3BucketRestrictTagAndAbacChanges:
+    Type: AWS::Organizations::Policy
+    Condition: ScpPrincipalConditionNotBlank
+    Properties:
+      Type: SERVICE_CONTROL_POLICY
+      Name: !Sub "S3BucketRestrictTagAndAbacChanges-${AWS::StackName}"
+      Tags:
+        - Key: StackName  # No automatic CloudFormation tags, as of 2026-03
+          Value: !Ref AWS::StackName
+        - Key: Source
+          Value: "github.com/sqlxpert/aws-rcp-s3-require-intelligent-tiering"
+        - Key: Rights
+          Value: "GPLv3. Copyright Paul Marcelin."
+      Description: !Sub >-
+        S3 bucket: Only principals matching "${ScpPrincipalCondition}" can
+        set/change/remove "${S3BucketTagKeyStrict}" and
+        "${S3BucketTagKeyPermissive}" bucket tags and enable/disable ABAC. Tag
+        permissions vary based on ABAC status; see statement IDs. GPLv3.
+        Copyright Paul Marcelin ( github.com/sqlxpert ).
+      TargetIds: !If
+        - EnableScpTrue
+        - [ !Ref ScpTargetIds ]
+        - !Ref AWS::NoValue
+
+      # Semantics:
+      #
+      # aws:TagKeys is a property of the request.
+      # - If ABAC is enabled for the bucket, tags in an s3:TagResource request
+      #   are new bucket tags and tags in an s3:UntagResource request are
+      #   existing bucket tags that are being deleted.
+      # - If ABAC is disabled, tags in s3:PutBucketTagging are new, or are
+      #   existing tags that are not being deleted. Existing bucket tags that
+      #   are missing from the request are being deleted.
+      #
+      # s3:BucketTag/TAG_KEY is an existing property of the resource (bucket).
+      #
+      # https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html
+      # https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazons3.html#amazons3-s3_BucketTag___TagKey_
+      #
+      # ForAllValues:OPERATOR is obviously true if every value of a
+      # multi-valued condition key matches, but it is also true if the key does
+      # not exist. ForAllValues:StringNotEquals is used to prevent deletion of
+      # a bucket tag with s3:PutBucketTagging (existing s3:BucketTag/TAG_KEY
+      # not re-stated in aws:TagKeys). The "Null": false check to confirm the
+      # existence of a condition key is for s3:BucketTag/TAG_KEY, not
+      # aws:TagKeys. If all of a bucket's existing tags were about to be
+      # deleted, aws:TagKeys would not exist in the request (or it would be
+      # null or empty), the ForAllValues:StringNotEquals condition would be
+      # true, and all conditions for Denying the deletion request would be met.
+      #
+      # https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-single-vs-multi-valued-context-keys.html#reference_policies_condition-forallvalues
+      Content: !Sub
+        - >-
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Deny",
+                "Action": "s3:PutBucketAbac",
+                "Resource": "*",
+                "Condition": {
+                  ${ScpPrincipalCondition}
+                }
+              },
+              {
+                "Sid": "BucketAbacEnabled",
+                "Effect": "Deny",
+                "Action": [
+                  "s3:TagResource",
+                  "s3:UntagResource"
+                ],
+                "Resource": "*",
+                "Condition": {
+                  ${ScpPrincipalCondition}${CommaAfterScpPrincipalCondition}
+                  "ForAnyValue:StringEquals": {
+                    "aws:TagKeys": [
+                      "${S3BucketTagKeyStrict}",
+                      "${S3BucketTagKeyPermissive}"
+                    ]
+                  }
+                }
+              },
+              {
+                "Sid": "CannotAddTag1BucketAbacDisabled",
+                "Effect": "Deny",
+                "Action": "s3:PutBucketTagging",
+                "Resource": "*",
+                "Condition": {
+                  ${ScpPrincipalCondition}${CommaAfterScpPrincipalCondition}
+                  "Null": {
+                    "s3:BucketTag/${S3BucketTagKeyStrict}": true
+                  },
+                  "ForAnyValue:StringEquals": {
+                    "aws:TagKeys": "${S3BucketTagKeyStrict}"
+                  }
+                }
+              },
+              {
+                "Sid": "CannotAddTag2BucketAbacDisabled",
+                "Effect": "Deny",
+                "Action": "s3:PutBucketTagging",
+                "Resource": "*",
+                "Condition": {
+                  ${ScpPrincipalCondition}${CommaAfterScpPrincipalCondition}
+                  "Null": {
+                    "s3:BucketTag/${S3BucketTagKeyPermissive}": true
+                  },
+                  "ForAnyValue:StringEquals": {
+                    "aws:TagKeys": "${S3BucketTagKeyPermissive}"
+                  }
+                }
+              },
+              {
+                "Sid": "CannotRemoveTag1BucketAbacDisabled",
+                "Effect": "Deny",
+                "Action": "s3:PutBucketTagging",
+                "Resource": "*",
+                "Condition": {
+                  ${ScpPrincipalCondition}${CommaAfterScpPrincipalCondition}
+                  "Null": {
+                    "s3:BucketTag/${S3BucketTagKeyStrict}": false
+                  },
+                  "ForAllValues:StringNotEquals": {
+                    "aws:TagKeys": "${S3BucketTagKeyStrict}"
+                  }
+                }
+              },
+              {
+                "Sid": "CannotRemoveTag2BucketAbacDisabled",
+                "Effect": "Deny",
+                "Action": "s3:PutBucketTagging",
+                "Resource": "*",
+                "Condition": {
+                  ${ScpPrincipalCondition}${CommaAfterScpPrincipalCondition}
+                  "Null": {
+                    "s3:BucketTag/${S3BucketTagKeyPermissive}": false
+                  },
+                  "ForAllValues:StringNotEquals": {
+                    "aws:TagKeys": "${S3BucketTagKeyPermissive}"
+                  }
+                }
+              }
+            ]
+          }
+        - CommaAfterScpPrincipalCondition:
+            !If [ ScpPrincipalConditionNotBlank, ",", "" ]
+            # cfn-lint W1028: False can indeed never occur, because !If
+            # references the same condition that determines whether the
+            # resource is created (see Condition: above). Nevertheless, I want
+            # the Content property to contain valid JSON at all times, because
+            # some systems check syntax early.
+    Metadata:
+      cfn-lint: { config: { ignore_checks: [ W1028 ] } }
+
+Outputs:
+
+  RcpS3BucketRequireStorageClassArn:
+    Description: >-
+      ARN of resource control policy to require specific S3 storage class
+    Value: !GetAtt RcpS3BucketRequireStorageClass.Arn
+  RcpS3BucketRequireStorageClassId:
+    Description: >-
+      Physical identifier of resource control policy
+    Value: !GetAtt RcpS3BucketRequireStorageClass.Id
+
+  ScpS3BucketRestrictTagAndAbacChangesArn:
+    Description: >-
+      ARN of service control policy to restrict S3 bucket tag and ABAC changes.
+      Empty string if SCP has not been generated.
+    Value: !If
+      - ScpPrincipalConditionNotBlank
+      - !GetAtt ScpS3BucketRestrictTagAndAbacChanges.Arn
+      - ""
+  ScpS3BucketRestrictTagAndAbacChangesId:
+    Description: >-
+      Physical identifier of service control policy.
+      Empty string if SCP has not been generated.
+    Value: !If
+      - ScpPrincipalConditionNotBlank
+      - !GetAtt ScpS3BucketRestrictTagAndAbacChanges.Id
+      - ""
