@@ -221,6 +221,11 @@ introduced in 2024 and 2025.
 
 ### Custom Tag Keys
 
+<details details name="advanced-topics">
+  <summary>Choose your own tags...</summary>
+
+<br/>
+
 Although you can choose whatever tag keys you like, subject to S3 rules, the
 defaults reflect the sort of tag key prefix hierarchy that I have been
 recommending to my employers and clients for more than a decade. It is easy to
@@ -240,7 +245,14 @@ most stack resources) or EC2 (instance tags copied to EBS volumes and their
 snapshots), include the resource type in the tag key to make the tag's origin
 and scope unambiguous.
 
-### Service Control Policy to Protect Bucket Tags
+</details>
+
+### Service Control Policy
+
+<details details name="advanced-topics">
+  <summary>Protect S3 bucket tags...</summary>
+
+<br/>
 
 I provide an optional service control policy that you can apply to
 organizational units to prevent most roles from adding the two special tags to,
@@ -268,7 +280,14 @@ for checking a bucket's current ABAC status, so it's not possible as of
 March,&nbsp;2026 to delegate permission to enable ABAC without also delegating
 permission to disable it.
 
+</details>
+
 ### Multiple Installations
+
+<details details name="advanced-topics">
+  <summary>Different storage classes for different buckets...</summary>
+
+<br/>
 
 I parameterized the storage class string, and the tag keys, and appended the
 CloudFormation stack name to the RCP and SCP names, to support multiple
@@ -277,7 +296,14 @@ all objects be created in the low-price `GLACIER` storage class, or even
 `DEEP_ARCHIVE`&nbsp;. Perhaps you have some buckets whose objects should always
 start in `STANDARD` class.
 
+</details>
+
 ### Existing Buckets
+
+<details details name="advanced-topics">
+  <summary>Enroll existing buckets...</summary>
+
+<br/>
 
 Before applying either bucket tag to an existing S3 bucket, be sure that all
 workflows have been updated to specify the required storage class when creating
@@ -297,9 +323,16 @@ These plans, decisions, and engineering actions are complex. If you need help,
 please get in touch. S3 storage cost optimization is part of what I do for a
 living.
 
+</details>
+
 ## Testing
 
 ### Test Setup
+
+<details>
+  <summary>Choose a role and authenticate...</summary>
+
+<br/>
 
 The test scripts assume that you have already run:
 
@@ -322,10 +355,12 @@ The IAM role you use for each test must:
   - enable versioning: `s3:PutBucketVersioning`
   - create, tag, and delete S3 _objects_
 
+</details>
+
 ### Resource Control Policy Test
 
-<details>
-  <summary>RCP test script instructions</summary>
+<details name="test-scope">
+  <summary>Test the RCP...</summary>
 
 <br/>
 
@@ -347,7 +382,14 @@ Test the RCP by cloning this repository and running:
 
 ### Service Control Policy Test
 
-Coming soon!
+<details name="test-scope">
+  <summary>Test the optional SCP...</summary>
+
+<br/>
+
+Coming soon...
+
+</details>
 
 ### Bug Reporting
 
