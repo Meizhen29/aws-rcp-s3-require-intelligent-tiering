@@ -1,29 +1,29 @@
 # Require S3 Intelligent Tiering!
 
 Still relying on lifecycle policies to transition S3 objects to
-[Intelligent Tiering](https://aws.amazon.com/s3/storage-classes/intelligent-tiering)
-after the fact? You're wasting money! Set `--storage-class` in scripts and
-`StorageClass` in code to avoid the transition charge and start the discount
-countdown the moment you create each object.
+[Intelligent Tiering](https://builder.aws.com/content/38nqWWauUbgfDsAzx2FpigrfAMv/intelligent-tiering-is-the-best-s3-storage-class-but-data-retrieval-is-not-free)
+after the fact? You're wasting money! Set `--storage-class`&nbsp;,
+`StorageClass`&nbsp;, or `x-amz-storage-class` in scripts and code to avoid a
+transition charge and start the discount countdown the moment you create each
+object.
 
-But how do you make sure _everyone else_ is using Intelligent Tiering?
+But how do you make sure _everybody_ is using Intelligent Tiering?
 
 AWS&nbsp;Config, CloudFormation Hooks, and third-party Terraform tooling with
 Open Policy Agent all let you require lifecycle policies on S3 buckets, but
 creating objects directly in `INTELLIGENT_TIERING` makes lifecycle transition
 rules unnecessary.
 
-I've discovered **a practical way to enforce the initial storage class**. Every
-time an object is created. By any user. In one S3 bucket or thousands. With
-configuration, not executable code.
+I've devised **a practical way to enforce the _initial_ S3 storage
+class**...every time an object is created...by any user...in one bucket or
+thousands of buckets.
 
 ## How to Use It
 
 ### Strict Bucket Tag
 
-To require Intelligent Tiering for all new objects, tag an S3 bucket with
-`cost-s3-require-storage-class-intelligent-tiering` (you can customize this tag
-key; the tag value is ignored) and enable
+To require Intelligent Tiering for all new objects, tag a new S3 bucket with
+`cost-s3-require-storage-class-intelligent-tiering` and enable
 [attribute-based access control](https://aws.amazon.com/blogs/aws/introducing-attribute-based-access-control-for-amazon-s3-general-purpose-buckets)
 for the bucket.
 
@@ -33,20 +33,28 @@ Users who forget to add...
   `aws s3api put-object`
 - `StorageClass="INTELLIGENT_TIERING"` when calling
   `client("s3").put_object()` in boto3 (or the equivalent in other AWS SDKs)
-- `x-amz-storage-class: INTELLIGENT_TIERING` for the `PubObject` HTTP API operation
+- `x-amz-storage-class: INTELLIGENT_TIERING` for the `PubObject` HTTP API
+  operation
 
-...will receive an "AccessDenied" error. In case a user misses
+...get an "AccessDenied" error. In case a user missed
 "require-storage-class"... in the bucket tag, the error message tells an
 administrator where to look: "explicit deny in a resource control policy".
 
-### Permissive Bucket Tag with Object Tag Override
+Jump to:
+[Installation](#installation)
+&bull;
+[Advanced Topics](#advanced-topics)
+&bull;
+[Testing](#testing)
 
-To require Intelligent Tiering but let users override the requirement, tag an
-S3 bucket with
+### Object Tag Override
+
+To require Intelligent Tiering but permit occasional overrides, tag a new S3
+bucket with
 `cost-s3-require-storage-class-intelligent-tiering-override-with-object-tag`&nbsp;.
-This tag wins if you apply both bucket tags to the same bucket.
+(This tag wins if you apply both bucket tags to the same bucket by mistake.)
 
-A user can create an object in any storage class by setting the
+In this bucket, a user can create an object in any storage class by setting the
 `cost-s3-override-storage-class-intelligent-tiering` _object tag_. Add:
 
 - `--tagging 'cost-s3-override-storage-class-intelligent-tiering='`<br/>when
@@ -56,15 +64,22 @@ A user can create an object in any storage class by setting the
 - `x-amz-tagging: cost-s3-override-storage-class-intelligent-tiering=`<br/>
   (Encode `=` as `%3D` if your HTTP library doesn't.)
 
-Also do this when overwriting an object or creating a new version.
+Also set the override tag when overwriting an object or creating a new version.
+
+Jump to:
+[Installation](#installation)
+&bull;
+[Advanced Topics](#advanced-topics)
+&bull;
+[Testing](#testing)
 
 ## How It Works
 
 Just 40&nbsp;lines of JSON in a resource control policy suffice to deny
 `s3:PutObject` requests if the bucket has a particular bucket tag and the
 requester has not set the required storage class (or the required object tag,
-if overrides are permitted). AWS announced the last necessary feature in
-November,&nbsp;2025!
+if overrides are permitted). It works thanks to new features that AWS
+introduced in 2024 and 2025.
 
 <details>
   <summary>AWS feature announcements that made it possible...</summary>
@@ -78,34 +93,35 @@ November,&nbsp;2025!
 
     November&nbsp;20,&nbsp;2025: [Amazon S3 now supports attribute-based access control](https://aws.amazon.com/about-aws/whats-new/2025/11/amazon-s3-attribute-based-access-control)
 
- 2. S3 errors now mention the kind of policy involved. If users miss
-    "require-storage-class"... in the bucket's tag, they can ask an
-    administrator, who will know to check AWS&nbsp;Organizations because the
-    error message mentions "explicit deny in a resource control policy".
+ 2. S3 errors now mention the type of policy. If users miss
+    "require-storage-class"... in the bucket's tag, an administrator knows to
+    check AWS&nbsp;Organizations because the error message mentions "a resource
+    control policy".
 
     June&nbsp;16,&nbsp;2025: [Amazon S3 extends additional context for HTTP 403 Access Denied error messages to AWS Organizations](https://aws.amazon.com/about-aws/whats-new/2025/06/amazon-s3-context-http-403-access-denied-error-message-aws-organizations)
 
-    - &#129668; S3 feature wish: If AWS extends a related improvement, S3 error
-      messages will reveal the ARN of the resource control policy. What a shame
+    - &#129668; S3 wish list: If AWS extended a related feature, S3 error
+      messages would reveal the resource control policy's ARN. (What a shame
       that AWS&nbsp;Organizations uses arbitrary resource identifiers instead
-      of letting us specify short names!
+      of letting us specify short, meaningful names!
       `arn:aws:organizations::112233445566:policy/o-abcdefghij/resource_control_policy/p-abcdefghij`
-      doesn't say much.
+      would be more informative than "a resource control policy", but still not
+      perfect.)
 
       January&nbsp;21,&nbsp;2026: [AWS introduces additional policy details to access denied error messages](https://aws.amazon.com/about-aws/whats-new/2026/01/additional-policy-details-access-denied-error)
 
- 3. Resource control policies now make it possible to regulate all the S3
-    buckets in one or more AWS accounts without having to edit the bucket
-    policy for each individual bucket and check for drift.
+ 3. One resource control policy can cover all S3 buckets in one or more AWS
+    accounts. It's no longer necessary to edit the bucket policy for each
+    individual bucket and check for drift.
 
     November&nbsp;13,&nbsp;2024: [Introducing resource control policies (RCPs) to centrally restrict access to AWS resources](https://aws.amazon.com/about-aws/whats-new/2024/11/resource-control-policies-restrict-access-aws-resources)
 
  4. The `s3:x-amz-storage-class` condition key makes it possible to restrict
-    the storage class of new objects. The scope was limited: one bucket, with a
-    bucket policy, or one role, with an inline IAM policy. Named,
-    customer-managed IAM policies that can be attached to multiple roles in the
-    same AWS account came later, then service control policies that cover all
-    roles in one or more accounts.
+    the storage class of new objects. At first, the scope was limited: a bucket
+    policy affects one bucket, and an inline IAM policy, one role. AWS later
+    introduced named, customer-managed IAM policies that can be attached to
+    multiple roles in the same AWS account, and then service control policies
+    that can cover all roles in one or more accounts.
 
     [December&nbsp;14,&nbsp;2015](https://docs.aws.amazon.com/AmazonS3/latest/userguide/WhatsNew.html#WhatsNew-earlier-doc-history#WhatsNew-earlier-doc-history:~:text=December%2014%2C%202015):
     [Condition keys for Amazon S3: s3:x-amz-storage-class](https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazons3.html#amazons3-s3_x-amz-storage-class)
@@ -114,10 +130,9 @@ November,&nbsp;2025!
 
 ## Installation
 
- 1. Log in to the AWS Console, in your management AWS account, as an
-    administrator. Choose the region where you manage most
-    infrastructure-as-code, noting that this template creates non-regional
-    resources.
+ 1. Log in to the AWS Console, in your management AWS account. Use an
+    administrative role. Choose the region where you manage
+    infrastructure-as-code that creates non-regional resources.
 
  2. Install using CloudFormation or Terraform.
 
@@ -134,35 +149,41 @@ November,&nbsp;2025!
 
       - Stack name: `S3RequireIntelligentTiering`
       - RCP root IDs, OU IDs, and/or AWS account ID numbers:
-        Enter the account number or the `ou-` ID of the organizational unit
-        that you use for testing resource and service control policies.
+        Enter the number of the account or the `ou-` ID of the organizational
+        unit that you use for testing resource control policies.
+      - See
+        [Advanced Topics](#advanced-topics),
+        below, for potential customizations.
 
     - **Terraform**
 
       Coming soon...
 
  3. Log in to your test AWS account or an account in your test organizational
-    unit. Use a role with permission to create, configure, and fill S3 buckets.
+    unit. Use a role with full S3 permissions.
 
- 4. In the AWS Console,
-    [create](https://console.aws.amazon.com/s3/bucket/create)
-    three S3 general purpose buckets. The first column of the table in
-    Step&nbsp;6 indicates tags to apply as you create the buckets. Under
-    "Tags - optional", click "Add new tag".
+ 4. If you're advanced user, see
+    [Testing](#testing),
+    below, for test scripts and then return to Step&nbsp;9.
 
- 5. In the list of
+ 5. [Create](https://console.aws.amazon.com/s3/bucket/create)
+    three "general purpose" S3 buckets. Apply tags from the left column of the
+    table in Step&nbsp;7 as you create the buckets. Under "Tags - optional",
+    click "Add new tag".
+
+ 6. In the list of
     [buckets](https://console.aws.amazon.com/s3/buckets),
     select each bucket in turn, open the "Properties" tab, and scroll down to
     "Bucket ABAC". Click "Edit" and enable ABAC.
 
- 6. Test the RCP by creating objects in the indicated storage classes, with and
+ 7. Test the RCP by creating objects in the indicated storage classes, with and
     without the override tag.
 
-    |**Create object in storage class** &rarr;|Standard|Intelligent&nbsp;Tiering|Standard|
+    |**Create an object in this storage class** &rarr;|Standard|Intelligent&nbsp;Tiering|Standard|
     |:---|:---:|:---:|:---:|
-    |**Tag object** &rarr;|No|No|`cost-s3-override-storage-class-intelligent-tiering`|
-    |&darr; **Tag bucket**||||
-    |No|&check;|&check;|&check;|
+    |**Tag the object** &rarr;|_No&nbsp;object&nbsp;tag_|_No&nbsp;object&nbsp;tag_|`cost-s3-override-storage-class-intelligent-tiering`|
+    |&darr; **Tag the bucket**||||
+    |_No bucket tag_|&check;|&check;|&check;|
     |`cost-s3-require-storage-class-intelligent-tiering`|&cross;|&check;|&cross;|
     |`cost-s3-require-storage-class-intelligent-tiering-override-with-object-tag`|&cross;|&check;|&check;|
 
@@ -180,7 +201,7 @@ November,&nbsp;2025!
     ```
 
     ```shell
-    read -p 'Name of next S3 bucket: ' -e -r S3_BUCKET_NAME
+    read -p 'Next S3 bucket: ' -e -r S3_BUCKET_NAME
     ```
 
     ```shell
@@ -191,42 +212,96 @@ November,&nbsp;2025!
 
     </details>
 
- 7. Empty and delete the test buckets.
+ 8. Empty and delete the test buckets.
 
- 8. Add other AWS account numbers, `ou-` organization unit IDs, or the `r-`
+ 9. Add other AWS account numbers, `ou-` organizational unit IDs, or the `r-`
     root ID to apply the RCP broadly.
 
-## Advanced Options
+## Advanced Topics
+
+### Custom Tag Keys
+
+Although you can choose whatever tag keys you like, subject to S3 rules, the
+defaults reflect the sort of tag key prefix hierarchy that I have been
+recommending to my employers and clients for more than a decade. It is easy to
+use the `StringLike` or `StringNotLike` operators to write
+[policy conditions](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_condition.html)
+that restrict permission to set all `cost-*` tags, or all `cost-s3-*` tags. By
+reserving tag key prefixes for
+[cost allocation](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/cost-alloc-tags.html),
+[attribute-based access control](https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_attribute-based-access-control.html),
+and other system-level uses, you can safely delegate permission for users to
+set other tags.
+
+Watch out for automated processes, like backup systems, that try to copy all of
+a resource's tags to a new resource! Where a system automatically copies tags
+to related resources, as in the case of CloudFormation (stack tags copied to
+most stack resources) or EC2 (instance tags copied to EBS volumes and their
+snapshots), include the resource type in the tag key to make the tag's origin
+and scope unambiguous.
 
 ### Service Control Policy to Protect Bucket Tags
 
-I provide an optional service control policy that you can apply to `ou-`
-organizational units to prevent roles from adding the two special tags to, or
-removing them from, any S3 bucket. The policy also prevents roles from enabling
-or disabling ABAC for any S3 bucket. You should define an exempt role in every
-AWS account.
+I provide an optional service control policy that you can apply to
+organizational units to prevent most roles from adding the two special tags to,
+or removing them from, any S3 bucket. The policy also prevents enabling or
+disabling ABAC for any S3 bucket.
 
-### Customization and Multiple Installations
+Exercise caution because this SCP generally reduces existing permissions.
+
+You will need at least one exempt role in every account, to manage S3 buckets.
+I recommend
+[IAM Identity Center permission sets](https://docs.aws.amazon.com/singlesignon/latest/userguide/permissionsets.html).
+You can customize the `ScpPrincipalCondition` parameter to
+[reference permission set roles](https://docs.aws.amazon.com/singlesignon/latest/userguide/referencingpermissionsets.html).
+
+The SCP offers two-way protection: Most roles can neither remove restrictions
+from S3 buckets nor place new restrictions on them. You could adapt the SCP to
+provide one-way protection: roles would be prevented from adding or removing
+the special bucket tags, but they would be allowed to enroll buckets by adding
+either special bucket tag in an
+[`s3:CreateBucket`](https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazons3.html#amazons3-CreateBucket)
+request only. Unfortunately, one action is used to enable and disable ABAC, and
+S3 lacks a
+[condition key](https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazons3.html#amazons3-policy-keys)
+for checking a bucket's current ABAC status, so it's not possible as of
+March,&nbsp;2026 to delegate permission to enable ABAC without also delegating
+permission to disable it.
+
+### Multiple Installations
 
 I parameterized the storage class string, and the tag keys, and appended the
 CloudFormation stack name to the RCP and SCP names, to support multiple
-installations. In buckets used for log storage, you might require that objects
-be created in the low-price `GLACIER` storage class, or even
+concurrent installations. In S3 buckets used for logs, you might require that
+all objects be created in the low-price `GLACIER` storage class, or even
 `DEEP_ARCHIVE`&nbsp;. Perhaps you have some buckets whose objects should always
 start in `STANDARD` class.
 
+### Existing Buckets
+
+Before applying either bucket tag to an existing S3 bucket, be sure that all
+workflows have been updated to specify the required storage class when creating
+objects. This is not possible for workflows you don't control! For a bucket
+that is the destination of a replication rule,
+[set the storage class in the replication rule](https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication-add-config.html#storage-class-configuration).
+
+You must also remove existing lifecycle _transition_ rules if they would
+[conflict](https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-transition-general-considerations.html#lifecycle-general-considerations-transition-sc) with the new initial storage class. For example, if you require that new
+objects be created in the Intelligent Tiering storage class, do not then
+transition them to other storage classes.
+
+You may want to add lifecycle transition rules on a temporary basis, to move
+existing objects to the storage class in which new objects will be created.
+
+These plans, decisions, and engineering actions are complex. If you need help,
+please get in touch. S3 storage cost optimization is part of what I do for a
+living.
+
 ## Testing
 
-### Resource Control Policy Test
+### Test Setup
 
-<details>
-  <summary>RCP test script instructions</summary>
-
-<br/>
-
-Test the RCP by running
-[test/0test-rcp-s3-require-intelligent-tiering.bash](/test/0test-rcp-s3-require-intelligent-tiering.bash?raw=true)&nbsp;.
-The script assumes that you have already run:
+The test scripts assume that you have already run:
 
 - [`aws configure`](https://docs.aws.amazon.com/cli/latest/reference/configure)
   or
@@ -236,19 +311,37 @@ The script assumes that you have already run:
   [`aws sso login`](https://docs.aws.amazon.com/signin/latest/userguide/command-line-sign-in.html#command-line-sign-in-sso)
 
 [AWS CloudShell](https://docs.aws.amazon.com/cloudshell/latest/userguide/welcome.html)
-is an extremely convenient alternative, if you use the Console.
+is an extremely convenient alternative.
 
-The IAM role you use for RCP testing must:
+The IAM role you use for each test must:
 
-- be in an AWS account subject to the resource control policy
-- not be in an account subject to the optional service control policy (If
-  the SCP applies, then you must use an exempt role. See the
-  `ScpPrincipalCondition` parameter.)
+- be in an AWS account subject to the **resource** control policy
 - have permission to:
   - create, tag, and delete S3 buckets
-  - create, tag, and delete S3 objects
-  - enable attribute-based access control for S3 buckets: `s3:PutBucketAbac`
+  - enable attribute-based access control: `s3:PutBucketAbac`
   - enable versioning: `s3:PutBucketVersioning`
+  - create, tag, and delete S3 _objects_
+
+### Resource Control Policy Test
+
+<details>
+  <summary>RCP test script instructions</summary>
+
+<br/>
+
+In addition to the requirements in
+[Test Setup](#test-setup),
+above, the role you use for testing the **R**CP must:
+
+- not be in an account subject to the optional **service** control policy (If
+  the **S**CP applies, then you must use an exempt role. See the
+  `ScpPrincipalCondition` parameter.)
+
+Test the RCP by cloning this repository and running:
+
+```shell
+./test/0test-rcp-s3-require-intelligent-tiering.bash
+```
 
 </details>
 
