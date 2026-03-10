@@ -63,7 +63,7 @@ when creating an object. Add:
 
 - `--tagging 'cost-s3-override-storage-class-intelligent-tiering='`<br/>when
   running `aws s3api put-object`
-- `Tagging=cost-s3-override-storage-class-intelligent-tiering=`<br/>when
+- `Tagging="cost-s3-override-storage-class-intelligent-tiering="`<br/>when
   calling `client("s3").put_object()` (or equivalent)
 - `x-amz-tagging: cost-s3-override-storage-class-intelligent-tiering=`<br/>
   (Encode `=` as `%3D` if your HTTP library doesn't.)
@@ -80,7 +80,60 @@ when creating an object. Add:
 
 ## How It Works
 
-Background coming soon
+A short resource control policy denies `s3:PutObject` requests if the bucket
+has a particular bucket tag and the requester has not set the appropriate
+storage class or, if overrides are permitted, the required object tag. The
+combination of features needed to make this practical didn't come about until
+November,&nbsp;2025.
+
+<detail>
+  <summary>AWS feature announcements that made it possible...</summary>
+
+<br/>
+
+ 1. With attribute-based access control, S3 now checks bucket tags before
+    authorizing requests. Users can see a bucket's tags, so they know what to
+    expect. The resource control policy won't break existing systems, because
+    any existing bucket is excluded until it is tagged and its ABAC setting is
+    enabled.
+
+    November,&nbsp;2025: [Amazon S3 now supports attribute-based access control](https://aws.amazon.com/about-aws/whats-new/2025/11/amazon-s3-attribute-based-access-control)
+
+ 2. S3 errors now mention the kind of policy involved. If users miss
+    "require-storage-class-intelligent tiering" in a bucket's tag, they can
+    report the error to an administrator, who will know where to look because
+    the error mentions that a resource control policy is denying permission.
+
+    June,&nbsp;2025: [Amazon S3 extends additional context for HTTP 403 Access Denied error messages to AWS Organizations](https://aws.amazon.com/about-aws/whats-new/2025/06/amazon-s3-context-http-403-access-denied-error-message-aws-organizations)
+
+    - S3 feature wish list: If AWS someday applies a related improvement to S3,
+      error messages will reveal the ARN of the resource control policy.
+      Although users still won't be able to read RCPs, knowing the policy ARN
+      would let first-time users search an internal knowledge base before
+      contacting an administrator. What a shame that AWS Organizations uses
+      arbitrary resource identifiers rather than user-determined names.
+      `arn:aws:organizations::112233445566:policy/o-abcdefghij/resource_control_policy/p-abcdefghij`
+      isn't exactly rich with information!
+
+      January, 2026: [AWS introduces additional policy details to access denied error messages](https://aws.amazon.com/about-aws/whats-new/2026/01/additional-policy-details-access-denied-error)
+
+ 3. Resource control policies, which S3 supports, make it possible to regulate
+    all the buckets in one or more AWS accounts, without having to edit (and
+    then control) the bucket policy for each individual bucket.
+
+    November,&nbsp;2024: [Introducing resource control policies (RCPs) to centrally restrict access to AWS resources](https://aws.amazon.com/about-aws/whats-new/2024/11/resource-control-policies-restrict-access-aws-resources)
+
+ 4. The `s3:x-amz-storage-class` condition key makes it possible to write
+    policies that restrict the storage class for new objects. Initially, the
+    scope of such policies was limiting: one bucket, due to its bucket policy,
+    one role, with an inline policy. Customer-managed policies that can be
+    attached to multiple roles in one AWS account came later, and service
+    control policies that can be applied to multiple accounts came much later.
+
+    [December&nbsp;14,&nbsp;2015](https://docs.aws.amazon.com/AmazonS3/latest/userguide/WhatsNew.html#WhatsNew-earlier-doc-history):
+    [s3:x-amz-storage-class](https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazons3.html#amazons3-s3_x-amz-storage-class)
+
+</detail>
 
 ## Installation
 
