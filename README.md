@@ -27,25 +27,24 @@ key; the tag value is ignored) and enable
 [attribute-based access control](https://aws.amazon.com/blogs/aws/introducing-attribute-based-access-control-for-amazon-s3-general-purpose-buckets)
 for the bucket.
 
-Users who forget to...
+Users who forget to add...
 
-- add `--storage-class INTELLIGENT_TIERING` when running `aws s3 cp`<br/>or
+- `--storage-class INTELLIGENT_TIERING` when running `aws s3 cp` or
   `aws s3api put-object`
-- set `StorageClass` when calling `client("s3").put_object()` in boto3<br/>(or
-  the equivalent in a different AWS SDK)
-- set the `x-amz-storage-class` header for the `PubObject` HTTP API operation
+- `StorageClass="INTELLIGENT_TIERING"` when calling
+  `client("s3").put_object()` in boto3 (or the equivalent in other AWS SDKs)
+- `x-amz-storage-class: INTELLIGENT_TIERING` for the `PubObject` HTTP API operation
 
 ...will receive an "AccessDenied" error. In case a user misses
-"require-storage-class-intelligent-tiering" in the bucket tag, the error
-message tells an administrator where to look: "explicit deny in a resource
-control policy".
+"require-storage-class"... in the bucket tag, the error message tells an
+administrator where to look: "explicit deny in a resource control policy".
 
 ### Permissive Bucket Tag with Object Tag Override
 
 To require Intelligent Tiering but let users override the requirement, tag an
 S3 bucket with
 `cost-s3-require-storage-class-intelligent-tiering-override-with-object-tag`&nbsp;.
-This tag wins if you accidentally apply both bucket tags to the same bucket.
+This tag wins if you apply both bucket tags to the same bucket.
 
 A user can create an object in any storage class by setting the
 `cost-s3-override-storage-class-intelligent-tiering` _object tag_. Add:
@@ -80,9 +79,9 @@ November,&nbsp;2025!
     November&nbsp;20,&nbsp;2025: [Amazon S3 now supports attribute-based access control](https://aws.amazon.com/about-aws/whats-new/2025/11/amazon-s3-attribute-based-access-control)
 
  2. S3 errors now mention the kind of policy involved. If users miss
-    "require-storage-class-intelligent tiering" in the bucket's tag, they can
-    ask an administrator, who will know to check AWS&nbsp;Organizations because
-    the error message mentions "explicit deny in a resource control policy".
+    "require-storage-class"... in the bucket's tag, they can ask an
+    administrator, who will know to check AWS&nbsp;Organizations because the
+    error message mentions "explicit deny in a resource control policy".
 
     June&nbsp;16,&nbsp;2025: [Amazon S3 extends additional context for HTTP 403 Access Denied error messages to AWS Organizations](https://aws.amazon.com/about-aws/whats-new/2025/06/amazon-s3-context-http-403-access-denied-error-message-aws-organizations)
 
