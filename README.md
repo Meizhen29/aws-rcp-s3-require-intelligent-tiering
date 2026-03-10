@@ -41,10 +41,9 @@ Users who forget to...
 
 - add `--storage-class INTELLIGENT_TIERING` when running `aws s3 cp`<br/>or
   `aws s3api put-object`
-- set `StorageClass` when calling `client("s3").put_object()` in boto3,<br/>(or
+- set `StorageClass` when calling `client("s3").put_object()` in boto3<br/>(or
   the equivalent in a different AWS SDK)
-- set the `x-amz-storage-class` header when calling `PubObject` in the HTTPS
-  API
+- set the `x-amz-storage-class` header for the `PubObject` HTTPS API operation
 
 ...will receive an `AccessDenied` error with the message "explicit deny in a
 resource control policy". Users can't see RCPs, but they can see
