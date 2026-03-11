@@ -75,7 +75,7 @@ Parameters:
       S3 bucket tag key to require that all objects be created in the
       designated storage class.
       To activate, make sure that the AWS account is subject to the RCP, then
-      enable attribute-bassed access control for the bucket and apply this tag
+      enable attribute-based access control for the bucket and apply this tag
       to the bucket. (The tag value is ignored.)
       Do not apply this tag to a bucket that is the destination of a
       replication rule, unless the rule also specifies the correct storage
@@ -93,7 +93,7 @@ Parameters:
     Description: >-
       S3 bucket tag key to require that objects without the overriding S3
       object tag be created in the designated storage class.
-      To activate, make sure that the AWS account is subject ot the RCP, then
+      To activate, make sure that the AWS account is subject to the RCP, then
       enable ABAC for the bucket and apply this tag to the bucket. (The tag
       value is ignored.)
       Do not apply this tag to a bucket that is the destination of a
@@ -160,7 +160,7 @@ Parameters:
       forbidden; to use these condition operators, write a custom policy.
       For condition operators, see
       https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_condition_operators.html
-      For condition keys, see
+      . For condition keys, see
       https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-principal-properties
     Default: '"ArnNotLike": { "aws:PrincipalArn": "arn:aws:iam::*:role/manage-s3" }'
     AllowedPattern: '^(?!.*"(Null|ForAnyValue:StringEquals|ForAllValues:StringNotEquals)").*$'
@@ -268,11 +268,11 @@ Resources:
         - Key: Rights
           Value: "GPLv3, Copyright Paul Marcelin"
       Description: !Sub >-
-        S3 bucket tagged "${S3BucketTagKeyStrict}": Require that all objects
+        S3 bucket tagged '${S3BucketTagKeyStrict}': Require that all objects
         be created in ${RequireS3StorageClass} storage class. ABAC must be
         enabled for the bucket.
-        Bucket tagged "${S3BucketTagKeyPermissive}": Override by tagging an
-        object "${S3ObjectTagKeyOverrideBucketTag}" on creation.
+        Bucket tagged '${S3BucketTagKeyPermissive}': Override by tagging an
+        object '${S3ObjectTagKeyOverrideBucketTag}' on creation.
         GPLv3, Copyright Paul Marcelin. github.com/sqlxpert
       TargetIds: !If
         - EnableRcpTrue
@@ -334,7 +334,7 @@ Resources:
           Value: "GPLv3, Copyright Paul Marcelin"
       Description: !Sub >-
         S3 bucket: Matching IAM principals cannot set/change/remove
-        "${S3BucketTagKeyStrict}" or "${S3BucketTagKeyPermissive}" bucket tags,
+        '${S3BucketTagKeyStrict}' or '${S3BucketTagKeyPermissive}' bucket tags,
         or enable/disable ABAC. Applicable tag permissions vary based on ABAC
         status; see statement IDs.
         GPLv3, Copyright Paul Marcelin. github.com/sqlxpert
