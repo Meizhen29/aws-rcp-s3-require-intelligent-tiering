@@ -148,7 +148,8 @@ introduced in 2024 and 2025.
       On the next page, set:
 
       - Stack name: `S3RequireIntelligentTiering`
-      - RCP root IDs, OU IDs, and/or AWS account ID numbers:
+      - RCP root IDs, OU IDs, and/or AWS account ID numbers
+        (&nbsp;`RcpTargetIds`&nbsp;):
         Enter the number of the account or the `ou-` ID of the organizational
         unit that you use for testing resource control policies.
       - See
@@ -264,7 +265,7 @@ Exercise caution because this SCP generally reduces existing permissions.
 You will need at least one exempt role in every account, to manage S3 buckets.
 I recommend
 [IAM Identity Center permission sets](https://docs.aws.amazon.com/singlesignon/latest/userguide/permissionsets.html).
-You can customize the `ScpPrincipalCondition` parameter to
+You can customize `ScpPrincipalCondition` / `scp_principal_condition` to
 [reference permission set roles](https://docs.aws.amazon.com/singlesignon/latest/userguide/referencingpermissionsets.html).
 
 The SCP offers two-way protection: Most roles can neither remove restrictions
@@ -290,9 +291,10 @@ permission to disable it.
 <br/>
 
 I parameterized the storage class string, and the tag keys, and appended the
-CloudFormation stack name to the RCP and SCP names, to support multiple
-concurrent installations. In S3 buckets used for logs, you might require that
-all objects be created in the low-price `GLACIER` storage class, or even
+CloudFormation stack name (or the `rcp_scp_name_suffix` variable, in the
+Terraform module) to the RCP and SCP names, to support multiple concurrent
+installations. In S3 buckets used for logs, you might require that all objects
+be created in the low-price `GLACIER` storage class, or even
 `DEEP_ARCHIVE`&nbsp;. Perhaps you have some buckets whose objects should always
 start in `STANDARD` class.
 
@@ -368,12 +370,13 @@ In addition to the requirements in
 above, the role you use for testing the **R**CP must:
 
 - not be in an account subject to the optional **service** control policy (If
-  the **S**CP applies, then you must use an exempt role. See the
-  `ScpPrincipalCondition` parameter.)
+  the **S**CP applies, then you must use an exempt role. See
+  `ScpPrincipalCondition` / `scp_principal_condition`&nbsp;.)
 
 Test the RCP by cloning this repository and running:
 
 ```shell
+cd aws-rcp-s3-require-intelligent-tiering
 ./test/0test-rcp-s3-require-intelligent-tiering.bash
 ```
 
