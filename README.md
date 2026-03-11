@@ -3,7 +3,7 @@
 Still relying on lifecycle policies to transition S3 objects to
 [Intelligent Tiering](https://builder.aws.com/content/38nqWWauUbgfDsAzx2FpigrfAMv/intelligent-tiering-is-the-best-s3-storage-class-but-data-retrieval-is-not-free)
 after the fact? You're wasting money! Set `--storage-class`&nbsp;,
-`StorageClass`&nbsp;, or `x-amz-storage-class` in scripts and code to avoid a
+`StorageClass`&nbsp;, or `x-amz-storage-class` in scripts or code to avoid a
 transition charge and start the discount countdown the moment you create each
 object.
 
@@ -52,7 +52,6 @@ Jump to:
 To require Intelligent Tiering but permit occasional overrides, tag a new S3
 bucket with
 `cost-s3-require-storage-class-intelligent-tiering-override-with-object-tag`&nbsp;.
-(This tag wins if you apply both bucket tags to the same bucket by mistake.)
 
 In this bucket, a user can create an object in any storage class by setting the
 `cost-s3-override-storage-class-intelligent-tiering` _object tag_. Add:
@@ -63,8 +62,6 @@ In this bucket, a user can create an object in any storage class by setting the
   calling `client("s3").put_object()` (or equivalent)
 - `x-amz-tagging: cost-s3-override-storage-class-intelligent-tiering=`<br/>
   (Encode `=` as `%3D` if your HTTP library doesn't.)
-
-Also set the override tag when overwriting an object or creating a new version.
 
 Jump to:
 [Installation](#installation)
@@ -78,8 +75,8 @@ Jump to:
 Just 40&nbsp;lines of JSON in a resource control policy suffice to deny
 `s3:PutObject` requests if the bucket has a particular bucket tag and the
 requester has not set the required storage class (or the required object tag,
-if overrides are permitted). It works thanks to new features that AWS
-introduced in 2024 and 2025.
+if overrides are permitted). It works thanks to AWS features introduced in 2024
+and 2025.
 
 <details>
   <summary>AWS feature announcements that made it possible...</summary>
@@ -132,7 +129,7 @@ introduced in 2024 and 2025.
 
  1. Log in to the AWS Console, in your management AWS account. Use an
     administrative role. Choose the region where you manage
-    infrastructure-as-code that creates non-regional resources.
+    infrastructure-as-code templates that creates non-regional resources.
 
  2. Install using CloudFormation or Terraform.
 
@@ -158,7 +155,37 @@ introduced in 2024 and 2025.
 
     - **Terraform**
 
-      Coming soon...
+      Check that you have at least:
+
+      - [Terraform v1.10.0 (2024-11-27)](https://github.com/hashicorp/terraform/releases/tag/v1.10.0)
+      - [Terraform AWS provider v6.0.0 (2025-06-18)](https://github.com/hashicorp/terraform-provider-aws/releases/tag/v6.0.0)
+
+      Add the following child module to your existing root module:
+
+      ```terraform
+      module "rcp_s3_require_intelligent_tiering" {
+        source = "git::https://github.com/sqlxpert/aws-rcp-s3-require-intelligent-tiering.git//terraform?ref=v1.0.0"
+        # Reference a specific version from github.com/sqlxpert/aws-rcp-s3-require-intelligent-tiering/releases
+
+        rcp_target_ids = [ "112233445566", "ou-abcd-efghijkl", ]
+      }
+      ```
+
+      Populate the `rcp_target_ids` array with a string for the number of the
+      account or the `ou-` ID of the organizational unit that you use for
+      testing resource control policies.
+
+      See
+      [Advanced Topics](#advanced-topics),
+      below, for potential customizations.
+
+      Have Terraform download the module's source code. Review the plan before
+      typing `yes` to allow Terraform to proceed with applying the changes.
+
+      ```shell
+      terraform init
+      terraform apply
+      ```
 
  3. Log in to your test AWS account or an account in your test organizational
     unit. Use a role with full S3 permissions.
@@ -217,6 +244,15 @@ introduced in 2024 and 2025.
 
  9. Add other AWS account numbers, `ou-` organizational unit IDs, or the `r-`
     root ID to apply the RCP broadly.
+
+## Special Cases
+
+If the strict and permissive bucket tags are both applied to the same bucket,
+the permissive one wins, and users can override the required storage class with
+the object tag.
+
+When overwriting an object or creating a new version, set the required storage
+class (or the override tag, if the bucket tag allows) in the request.
 
 ## Advanced Topics
 
