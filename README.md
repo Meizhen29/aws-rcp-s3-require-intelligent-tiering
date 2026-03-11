@@ -352,7 +352,6 @@ The IAM role you use for each test must:
 - have permission to:
   - create, tag, and delete S3 buckets
   - enable attribute-based access control: `s3:PutBucketAbac`
-  - enable versioning: `s3:PutBucketVersioning`
   - create, tag, and delete S3 _objects_
 
 </details>
