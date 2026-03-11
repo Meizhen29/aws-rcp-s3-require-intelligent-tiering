@@ -266,7 +266,7 @@ Resources:
         - Key: Source
           Value: "github.com/sqlxpert/aws-rcp-s3-require-intelligent-tiering"
         - Key: Rights
-          Value: "GPLv3, Copyright Paul Marcelin"
+          Value: "GPLv3. Copyright Paul Marcelin."
       Description: !Sub >-
         S3 bucket tagged '${S3BucketTagKeyStrict}': Require that all objects
         be created in ${RequireS3StorageClass} storage class. ABAC must be
@@ -331,7 +331,7 @@ Resources:
         - Key: Source
           Value: "github.com/sqlxpert/aws-rcp-s3-require-intelligent-tiering"
         - Key: Rights
-          Value: "GPLv3, Copyright Paul Marcelin"
+          Value: "GPLv3. Copyright Paul Marcelin."
       Description: !Sub >-
         S3 bucket: Matching IAM principals cannot set/change/remove
         '${S3BucketTagKeyStrict}' or '${S3BucketTagKeyPermissive}' bucket tags,
