@@ -4,8 +4,9 @@ Still relying on lifecycle policies to transition S3 objects to
 [Intelligent Tiering](https://builder.aws.com/content/38nqWWauUbgfDsAzx2FpigrfAMv/intelligent-tiering-is-the-best-s3-storage-class-but-data-retrieval-is-not-free)
 after the fact? You're wasting money! Set `--storage-class`&nbsp;,
 `StorageClass`&nbsp;, or `x-amz-storage-class` in scripts or code to avoid a
-transition charge and start the discount countdown the moment you create each
-object.
+transition charge and start the
+[savings countdown](https://aws.amazon.com/blogs/aws/amazon-s3-glacier-is-the-best-place-to-archive-your-data-introducing-the-s3-glacier-instant-retrieval-storage-class/#:~:text=No%20tiering%20charges%20apply,S3%20Intelligent%2DTiering%20storage%20class.)
+the moment you create each object.
 
 But how do you make sure _everybody_ is using Intelligent Tiering?
 
@@ -103,14 +104,16 @@ and 2025.
     A resource control policy won't break existing systems, because an existing
     bucket is excluded until it is tagged and its ABAC setting is enabled.
 
-    November&nbsp;20,&nbsp;2025: [Amazon S3 now supports attribute-based access control](https://aws.amazon.com/about-aws/whats-new/2025/11/amazon-s3-attribute-based-access-control)
+    November&nbsp;20,&nbsp;2025:
+    [Amazon S3 now supports attribute-based access control](https://aws.amazon.com/about-aws/whats-new/2025/11/amazon-s3-attribute-based-access-control)
 
  2. S3 errors now mention the type of policy. If users miss
     "require-storage-class"... in the bucket's tag, an administrator knows to
     check AWS&nbsp;Organizations because the error message mentions "a resource
     control policy".
 
-    June&nbsp;16,&nbsp;2025: [Amazon S3 extends additional context for HTTP 403 Access Denied error messages to AWS Organizations](https://aws.amazon.com/about-aws/whats-new/2025/06/amazon-s3-context-http-403-access-denied-error-message-aws-organizations)
+    June&nbsp;16,&nbsp;2025:
+    [Amazon S3 extends additional context for HTTP 403 Access Denied error messages to AWS Organizations](https://aws.amazon.com/about-aws/whats-new/2025/06/amazon-s3-context-http-403-access-denied-error-message-aws-organizations)
 
     - &#129668; S3 wish list: If AWS extended a related feature, S3 error
       messages would reveal the resource control policy's ARN. (What a shame
@@ -120,23 +123,39 @@ and 2025.
       would be more informative than "a resource control policy", but still not
       perfect.)
 
-      January&nbsp;21,&nbsp;2026: [AWS introduces additional policy details to access denied error messages](https://aws.amazon.com/about-aws/whats-new/2026/01/additional-policy-details-access-denied-error)
+      January&nbsp;21,&nbsp;2026:
+      [AWS introduces additional policy details to access denied error messages](https://aws.amazon.com/about-aws/whats-new/2026/01/additional-policy-details-access-denied-error)
 
  3. One resource control policy can cover all S3 buckets in one or more AWS
     accounts. It's no longer necessary to edit the bucket policy for each
     individual bucket and check for drift.
 
-    November&nbsp;13,&nbsp;2024: [Introducing resource control policies (RCPs) to centrally restrict access to AWS resources](https://aws.amazon.com/about-aws/whats-new/2024/11/resource-control-policies-restrict-access-aws-resources)
+    November&nbsp;13,&nbsp;2024:
+    [Introducing resource control policies (RCPs) to centrally restrict access to AWS resources](https://aws.amazon.com/about-aws/whats-new/2024/11/resource-control-policies-restrict-access-aws-resources)
 
  4. The `s3:x-amz-storage-class` condition key makes it possible to restrict
-    the storage class of new objects. At first, the scope was limited: a bucket
-    policy affects one bucket, and an inline IAM policy, one role. AWS later
-    introduced named, customer-managed IAM policies that can be attached to
-    multiple roles in the same AWS account, and then service control policies
-    that can cover all roles in one or more accounts.
+    the storage class of new objects. At first, the available policy scopes
+    were limited: a bucket policy affects only one bucket, and a named,
+    customer-managed IAM policy can be attached to multiple roles, but only in
+    one AWS account. Later, AWS launched AWS&nbsp;Organizations, introducing
+    service control policies that can cover all roles in one or more accounts.
+    Even later, AWS relaxed limitations on conditions in SCPs.
 
-    [December&nbsp;14,&nbsp;2015](https://docs.aws.amazon.com/AmazonS3/latest/userguide/WhatsNew.html#WhatsNew-earlier-doc-history#WhatsNew-earlier-doc-history:~:text=December%2014%2C%202015):
-    [Condition keys for Amazon S3: s3:x-amz-storage-class](https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazons3.html#amazons3-s3_x-amz-storage-class)
+    February&nbsp;11,&nbsp;2015:
+    [AWS Identity and Access Management simplifies policy management](https://aws.amazon.com/about-aws/whats-new/2015/02/11/aws-identity-and-access-management-simplifies-policy-management)
+
+    December&nbsp;14,&nbsp;2015:
+    [Condition keys for Amazon S3: s3:x-amz-storage-class](https://docs.aws.amazon.com/AmazonS3/latest/userguide/WhatsNew.html#WhatsNew-earlier-doc-history:~:text=IAM%20policies%20now%20support,x%2Damz%2Dstorage%2Dclass%20condition%20key.)
+
+    February&nbsp;27,&nbsp;2017:
+    [AWS Organizations Now Generally Available](https://aws.amazon.com/about-aws/whats-new/2017/02/aws-organizations-now-generally-available)
+
+    September&nbsp;19,&nbsp;2025:
+    [AWS Organizations supports full IAM policy language for service control policies (SCPs)](https://aws.amazon.com/about-aws/whats-new/2025/09/aws-organizations-iam-language-service-control-policies)
+
+    - To understand why not even SCPs provided a sufficient policy scope for
+      this application, see
+      [Differences between SCPs and RCPs](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_authorization_policies.html#understanding-scps-and-rcps)
 
 </details>
 
@@ -263,16 +282,21 @@ and 2025.
  9. Add other AWS account numbers, `ou-` organizational unit IDs, or the `r-`
     root ID to apply the RCP broadly.
 
-## Special Cases
-
-If the strict and permissive bucket tags are both applied to the same bucket,
-the permissive one wins, and users can override the required storage class with
-the object tag.
-
-When overwriting an object or creating a new version, set the required storage
-class (or the override tag, if the bucket tag allows) in the request.
-
 ## Advanced Topics
+
+### Semantics
+
+- If _both_ bucket tags are applied to the same S3 bucket, the strict bucket
+  tag loses and the permissive bucket tag wins; users can override the required
+  storage class with the object tag. I chose this interpretation to avoid
+  contradicting what users can see: "-override-with-object-tag" in one of the
+  bucket's two tags.
+- Set the required storage class (or the override tag, if the bucket tag
+  allows overrides) when overwriting an object or creating a new version.
+- The resource control policy regulates only the _initial_ storage class.
+  Lifecycle transition rules may later transition an object or object version
+  to a different storage class.
+  [S3 resource-based policies do not restrict lifecycle rules.](https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-expire-general-considerations.html#:~:text=You%20can't%20use%20a%20bucket%20,S3%20Lifecycle%20rule.)
 
 ### Custom Tag Keys
 
@@ -281,10 +305,13 @@ class (or the override tag, if the bucket tag allows) in the request.
 
 <br/>
 
-Although you can choose whatever tag keys you like, subject to S3 rules, the
-defaults reflect the sort of tag key prefix hierarchy that I have been
-recommending to my employers and clients for more than a decade. It is easy to
-use the `StringLike` or `StringNotLike` operators to write
+Although you can choose whatever tag keys you like, subject to
+[S3 bucket tag rules](https://docs.aws.amazon.com/AmazonS3/latest/userguide/tagging.html#tag-key)
+and
+[S3 object tag rules](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-tagging.html),
+the defaults reflect a key prefix hierarchy that I have been recommending to
+employers and clients for more than a decade. It is easy to use the
+`StringLike` or `StringNotLike` operators to write
 [policy conditions](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_condition.html)
 that restrict permission to set all `cost-*` tags, or all `cost-s3-*` tags. By
 reserving tag key prefixes for
@@ -312,9 +339,11 @@ and scope unambiguous.
 I provide an optional service control policy that you can apply to
 organizational units to prevent most roles from adding the two special tags to,
 or removing them from, any S3 bucket. The policy also prevents enabling or
-disabling ABAC for any S3 bucket.
+disabling ABAC for any S3 bucket. **The lack of such a control undermines the
+security of most real-world uses of ABAC.**
 
-Exercise caution because this SCP generally reduces existing permissions.
+Test the SCP first, because it generally reduces existing S3 permissions. Human
+users or automated processes might rely on those permissions.
 
 You will need at least one exempt role in every account, to manage S3 buckets.
 I recommend
@@ -324,33 +353,42 @@ You can customize `ScpPrincipalCondition` / `scp_principal_condition` to
 
 The SCP offers two-way protection: Most roles can neither remove restrictions
 from S3 buckets nor place new restrictions on them. You could adapt the SCP to
-provide one-way protection: roles would be prevented from adding or removing
-the special bucket tags, but they would be allowed to enroll buckets by adding
-either special bucket tag in an
+provide one-way protection: most roles would not be prevented from applying the
+special bucket tags in an
 [`s3:CreateBucket`](https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazons3.html#amazons3-CreateBucket)
-request only. Unfortunately, one action is used to enable and disable ABAC, and
-S3 lacks a
+request. An exempt role would still have to enable ABAC for the new bucket.
+Unfortunately, it is not possible to delegate permission to enable ABAC without
+also delegating permission to disable it. A single API action,
+[s3:PutBucket](https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketAbac.html),
+serves to enable _and_ disable ABAC, and as of March,&nbsp;2026, S3 lacks a
 [condition key](https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazons3.html#amazons3-policy-keys)
-for checking a bucket's current ABAC status, so it's not possible as of
-March,&nbsp;2026 to delegate permission to enable ABAC without also delegating
-permission to disable it.
+for checking a bucket's current ABAC status.
 
 </details>
 
 ### Multiple Installations
 
 <details details name="advanced-topics">
-  <summary>Different storage classes for different buckets...</summary>
+  <summary>Choose different storage classes for different applications...</summary>
 
 <br/>
 
-I parameterized the storage class string, and the tag keys, and appended the
-CloudFormation stack name (or the `rcp_scp_name_suffix` variable, in the
-Terraform module) to the RCP and SCP names, to support multiple concurrent
-installations. In S3 buckets used for logs, you might require that all objects
-be created in the low-price `GLACIER_IR` storage class, or even
-`DEEP_ARCHIVE`&nbsp;. Perhaps you have some buckets whose objects should always
-start in `STANDARD` class.
+To support multiple concurrent installations, I have parameterized:
+
+- the required storage class
+- all three tag keys
+- the name suffix for the RCP and SCP (It's the CloudFormation stack name, or
+  the `rcp_scp_name_suffix` variable in the Terraform module.)
+
+[Requiring `INTELLIGENT_TIERING` is best for most S3 use cases](https://builder.aws.com/content/38nqWWauUbgfDsAzx2FpigrfAMv/intelligent-tiering-is-the-best-s3-storage-class-but-data-retrieval-is-not-free#:~:text=Heuristics),
+but in buckets for seldom-accessed logs, you might require that all objects be
+created in `GLACIER_IR` storage class (low storage price, high retrieval
+charge), or even in
+[`DEEP_ARCHIVE`](https://builder.aws.com/content/38nzuuU92cmS7nEhDEZNrhjAtG5/save-more-on-s3-storage-by-implementing-asynchronous-retrieval)
+(very low storage price, two-step asynchronous retrieval semantics). Perhaps
+you have some buckets whose objects are always frequently-accessed and
+short-lived, and you want to be sure that objects can only be created in
+`STANDARD` class.
 
 </details>
 
@@ -361,10 +399,10 @@ start in `STANDARD` class.
 
 <br/>
 
-Before applying either bucket tag to an existing S3 bucket, be sure that all
-workflows have been updated to specify the required storage class when creating
-objects. This is not possible for workflows you don't control! For a bucket
-that is the destination of a replication rule,
+Before applying either the strict or permissive bucket tag to an existing S3
+bucket, be sure that all workflows have been updated to specify the required
+storage class when creating objects. This is not possible for workflows you
+don't control! For a bucket that is the destination of a replication rule,
 [set the storage class in the replication rule](https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication-add-config.html#storage-class-configuration).
 
 You must also remove existing lifecycle _transition_ rules if they would
@@ -375,9 +413,11 @@ transition them to other storage classes.
 You may want to add lifecycle transition rules on a temporary basis, to move
 existing objects to the storage class in which new objects will be created.
 
-These plans, decisions, and engineering actions are complex. If you need help,
-please get in touch. S3 storage cost optimization is part of what I do for a
-living.
+Other lifecycle rules, such as lifecycle _expiration_ rules, are fine.
+
+The options, decisions, and engineering actions are complex. The security and
+cost consequences are significant. If you need help, please get in touch. This
+is part of what I do for a living.
 
 </details>
 

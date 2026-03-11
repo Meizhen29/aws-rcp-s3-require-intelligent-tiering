@@ -90,7 +90,7 @@ Parameters:
       replication rule, unless the rule also specifies the correct storage
       class.
       For bucket tag rules, see
-      https://docs.aws.amazon.com/AmazonS3/latest/userguide/tagging.html
+      https://docs.aws.amazon.com/AmazonS3/latest/userguide/tagging.html#tag-key
       . For ABAC, see
       https://docs.aws.amazon.com/AmazonS3/latest/userguide/buckets-tagging-enable-abac.html
       . For replication storage class, see
