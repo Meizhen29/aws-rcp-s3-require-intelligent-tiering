@@ -28,7 +28,7 @@ Parameters:
       - "true"
 
   RcpTargetIds:
-    Type: String
+    Type: List<String>
     Description: >-
       Up to 100 r- root ID strings, ou- organizational unit ID strings, and/or
       AWS account ID numbers to which the RCP will apply. Separate multiple
@@ -129,7 +129,7 @@ Parameters:
       - "true"
 
   ScpTargetIds:
-    Type: String
+    Type: List<String>
     Description: >-
       Up to 100 r- root ID strings, ou- organizational unit ID strings, and/or
       AWS account ID numbers to which the SCP (if generated) will apply.
@@ -244,7 +244,7 @@ Conditions:
 
   EnableRcpTrue: !And
     - !Equals [ !Ref EnableRcp, "true" ]
-    - !Not [ !Equals [ !Ref RcpTargetIds, "" ] ]
+    - !Not [ !Equals [ !Join [ "", !Ref RcpTargetIds ], "" ] ]
 
   ScpPrincipalConditionNotBlank:
     !Not [ !Equals [ !Ref ScpPrincipalCondition, "" ] ]
@@ -252,7 +252,7 @@ Conditions:
   EnableScpTrue: !And
     - !Condition ScpPrincipalConditionNotBlank
     - !Equals [ !Ref EnableScp, "true" ]
-    - !Not [ !Equals [ !Ref ScpTargetIds, "" ] ]
+    - !Not [ !Equals [ !Join [ "", !Ref ScpTargetIds ], "" ] ]
 
 Resources:
 
@@ -275,10 +275,7 @@ Resources:
         Bucket tagged '${S3BucketTagKeyPermissive}': Override by tagging an
         object '${S3ObjectTagKeyOverrideBucketTag}' on creation.
         GPLv3, Copyright Paul Marcelin. github.com/sqlxpert
-      TargetIds: !If
-        - EnableRcpTrue
-        - [ !Ref RcpTargetIds ]
-        - !Ref AWS::NoValue
+      TargetIds: !If [ EnableRcpTrue, !Ref RcpTargetIds, !Ref AWS::NoValue ]
       Content: !Sub >-
         {
           "Version": "2012-10-17",
@@ -339,10 +336,7 @@ Resources:
         or enable/disable ABAC. Applicable tag permissions vary based on ABAC
         status; see statement IDs.
         GPLv3, Copyright Paul Marcelin. github.com/sqlxpert
-      TargetIds: !If
-        - EnableScpTrue
-        - [ !Ref ScpTargetIds ]
-        - !Ref AWS::NoValue
+      TargetIds: !If [ EnableScpTrue, !Ref ScpTargetIds, !Ref AWS::NoValue ]
 
       # Semantics:
       #
