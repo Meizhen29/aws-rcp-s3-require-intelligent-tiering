@@ -266,11 +266,12 @@ and 2025.
     aws s3 cp test.txt "s3://${S3_BUCKET_NAME}"
     aws s3 cp test.txt "s3://${S3_BUCKET_NAME}" --storage-class INTELLIGENT_TIERING
     aws s3api put-object --body test.txt --bucket "${S3_BUCKET_NAME}" --key test.txt --tagging 'cost-s3-override-storage-class-intelligent-tiering='
+    aws s3 rm "s3://${S3_BUCKET_NAME}/test.txt"
     ```
 
     </details>
 
- 8. Empty and delete the test buckets.
+ 8. Delete the test buckets.
 
  9. Add other AWS account numbers, `ou-` organizational unit IDs, or the `r-`
     root ID to apply the RCP broadly.
