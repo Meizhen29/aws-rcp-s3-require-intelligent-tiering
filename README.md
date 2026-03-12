@@ -75,7 +75,7 @@ create it in a different storage class like `STANDARD`&nbsp;. Just add:
    (~`aws s3 cp`~ doesn't accept tags.)
 - `Tagging="cost-s3-override-storage-class-intelligent-tiering=", StorageClass="STANDARD"`<br/>
   when calling `client("s3").put_object()` (or equivalent)
-- `x-amz-tagging: cost-s3-override-storage-class-intelligent-tiering=` and<br/>
+- `x-amz-tagging: cost-s3-override-storage-class-intelligent-tiering=`<br/>
   `x-amz-storage-class: STANDARD` (Encode `=` as `%3D` if your HTTP library
   doesn't.)
 
@@ -388,7 +388,7 @@ organizational units to prevent non-exempt roles from enabling or disabling
 ABAC for any S3 bucket. The policy also prevents non-exempt roles from
 adding/changing/removing the strict and permissive bucket tags, if ABAC is
 enabled for the bucket. **The lack of such a control undermines the security of
-most real-world uses of ABAC.**
+most real-world ABAC application.**
 
 Test the SCP before applying it, because it generally reduces existing S3
 permissions. Human users or automated processes might rely on those
