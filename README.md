@@ -291,7 +291,7 @@ and 2025.
     # INTELLIGENT_TIERING untagged object
     aws s3 cp test.txt "s3://${S3_BUCKET_NAME}" --storage-class INTELLIGENT_TIERING
     #
-    #3. STANDARD tagged object
+    # STANDARD tagged object
     aws s3api put-object --body test.txt --bucket "${S3_BUCKET_NAME}" --key test.txt --tagging 'cost-s3-override-storage-class-intelligent-tiering='
     #
     aws s3 rm "s3://${S3_BUCKET_NAME}/test.txt"
