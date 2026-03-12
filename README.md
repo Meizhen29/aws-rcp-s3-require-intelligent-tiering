@@ -333,11 +333,9 @@ and 2025.
   Lifecycle transition rules may later transition an object or object version
   to a different storage class.
   [S3 resource-based policies do not restrict lifecycle rules.](https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-expire-general-considerations.html#:~:text=You%20can't%20use%20a%20bucket%20policy,S3%20Lifecycle%20rule.)
-- The RCP works by denying permission for the `s3:PutObject` action unless
-  certain conditions are met. It cannot _add_ permissions. Users will not be
-  able to create objects in S3 buckets if you've already denied permission for
-  this action in your own custom RCP, attached at the same level or at a higher
-  level in the organizational hierarchy.
+- The RCP works by denying `s3:PutObject` requests unless conditions are met.
+  It cannot _add_ permissions that have been denied by another RCP or by an
+  SCP, or that were never allowed by a role's attached or inline policies.
 - RCPs do not affect resources, such as S3 buckets, in the
   AWS&nbsp;Organizations management account.
 
