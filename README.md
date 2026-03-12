@@ -1,14 +1,12 @@
 # Require S3 Intelligent Tiering!
 
-Still relying on lifecycle policies to transition S3 objects to
-[Intelligent Tiering](https://builder.aws.com/content/38nqWWauUbgfDsAzx2FpigrfAMv/intelligent-tiering-is-the-best-s3-storage-class-but-data-retrieval-is-not-free)
-after the fact? You're wasting money! Set `--storage-class`&nbsp;,
-`StorageClass`&nbsp;, or `x-amz-storage-class` in scripts or code to avoid a
-transition charge and start the
+Still relying on lifecycle policies to transition S3 objects to Intelligent
+Tiering after the fact? You're wasting money! Set the storage class in scripts
+or code to avoid a transition charge and start the
 [savings countdown](https://aws.amazon.com/blogs/aws/amazon-s3-glacier-is-the-best-place-to-archive-your-data-introducing-the-s3-glacier-instant-retrieval-storage-class/#:~:text=No%20tiering%20charges%20apply,S3%20Intelligent%2DTiering%20storage%20class.)
 the moment you create each object.
 
-But how do you make sure _everybody_ is using Intelligent Tiering?
+But how do you make sure _everybody_ does it?
 
 AWS&nbsp;Config, CloudFormation Hooks, and third-party Terraform tooling with
 Open Policy Agent all let you require lifecycle policies on S3 buckets, but
