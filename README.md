@@ -307,22 +307,30 @@ and 2025.
 
 ### Semantics
 
-- When overwriting an object or creating a new version, set the required
-  storage class (or the `cost-s3-override-storage-class-intelligent-tiering`
+- **When overwriting** an object or creating a new version, **set the required
+  storage class** (or the `cost-s3-override-storage-class-intelligent-tiering`
   object tag, if the bucket tag is
   `cost-s3-require-storage-class-intelligent-tiering-override-with-object-tag`&nbsp;).
 - If _both_<br/>
   `cost-s3-require-storage-class-intelligent-tiering` and<br/>
   `cost-s3-require-storage-class-intelligent-tiering-override-with-object-tag`<br/>
-  are applied to the same bucket, the strict bucket tag loses and the
-  permissive bucket tag wins; users can override the required storage class
-  by setting the `cost-s3-override-storage-class-intelligent-tiering` _object
-  tag_. This interpretation avoids contradicting what users can see:
+  are applied to the same bucket, **the permissive bucket tag wins out over the
+  strict bucket tag**; users can override the required storage class by setting
+  the `cost-s3-override-storage-class-intelligent-tiering` object tag. This
+  interpretation avoids contradicting what users can see:
   "-override-with-object-tag" in one of the bucket's two tags.
+- **The RCP forbids disabling attribute-based access control if either bucket
+  tag is present.** Before disabling ABAC, remove the bucket tag. (This use of
+  bucket tags makes it possible to delegate permission to enable ABAC without
+  delegating permission to disable it. The same API action,
+  [s3:PutBucketAbac](https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketAbac.html)&nbsp;,
+  serves to enable _and_ disable ABAC, and there is no
+  [condition key](https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazons3.html#amazons3-policy-keys)
+  for checking a bucket's current ABAC status. But bucket tag conditions are
+  only enforced if ABAC is active!)
 - To prevent confusion, the RCP forbids applying
-  `cost-s3-override-storage-class-intelligent-tiering` to any bucket with
-  attribute-based access control enabled. This tag is meant for new objects. It
-  has no effect on a bucket.
+  `cost-s3-override-storage-class-intelligent-tiering` to any bucket with ABAC
+  enabled. That tag is meant for new objects. It has no effect on a bucket.
 
 <details>
   <summary>Resource control policy technical details...</summary>
@@ -400,15 +408,11 @@ SCPs do not affect roles or other IAM principals in the AWS&nbsp;Organizations
 management account.
 
 The SCP offers two-way protection: Non-exempt roles can neither remove
-restrictions from S3 buckets nor place new restrictions on them. One-way
-protection, that is, allowing users to enroll buckets but not to disenroll
-them, would be ideal.
-Unfortunately, it is not possible to delegate permission to enable ABAC without
-also delegating permission to disable it. A single API action,
-[s3:PutBucketAbac](https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketAbac.html)&nbsp;,
-serves to enable _and_ disable ABAC. As of March,&nbsp;2026, S3 lacks a
-[condition key](https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazons3.html#amazons3-policy-keys)
-for checking a bucket's current ABAC status.
+restrictions from S3 buckets nor place new restrictions on them. For one-way
+protection, that is, allowing non-exempt roles to enroll buckets but not to
+disenroll them, allow `s3:TagResource` but deny removal of the strict and
+permissive bucket tags. Thanks to the RCP, if the bucket tag can't be removed,
+ABAC can't be disabled.
 
 </details>
 

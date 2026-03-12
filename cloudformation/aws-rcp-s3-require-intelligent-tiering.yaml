@@ -296,11 +296,11 @@ Resources:
         - Key: Rights
           Value: "GPLv3. Copyright Paul Marcelin."
       Description: !Sub >-
-        S3 bucket tagged '${S3BucketTagKeyStrict}': Require that all objects
-        be created in ${RequireS3StorageClass} storage class. ABAC must be
-        enabled for the bucket.
-        Bucket tagged '${S3BucketTagKeyPermissive}': Override by tagging an
-        object '${S3ObjectTagKeyOverrideBucketTag}' on creation.
+        S3 bucket with ABAC enabled, tagged '${S3BucketTagKeyStrict}': Require
+        that all objects be created in ${RequireS3StorageClass} storage class,
+        forbid disabling ABAC.
+        If tagged '${S3BucketTagKeyPermissive}': Override storage class by
+        tagging an object '${S3ObjectTagKeyOverrideBucketTag}' on creation.
         GPLv3, Copyright Paul Marcelin. github.com/sqlxpert
       TargetIds: !If [ EnableRcpTrue, !Ref RcpTargetIds, !Ref AWS::NoValue ]
       Content: !Sub >-
@@ -350,6 +350,30 @@ Resources:
               "Condition": {
                 "ForAnyValue:StringEquals": {
                   "aws:TagKeys": "${S3ObjectTagKeyOverrideBucketTag}"
+                }
+              }
+            },
+            {
+              "Sid": "S3BucketForbidDisablingAbacTag1",
+              "Effect": "Deny",
+              "Principal": "*",
+              "Action": "s3:PutBucketAbac",
+              "Resource": "*",
+              "Condition": {
+                "Null": {
+                  "s3:BucketTag/${S3BucketTagKeyStrict}": "false"
+                }
+              }
+            },
+            {
+              "Sid": "S3BucketForbidDisablingAbacTag2",
+              "Effect": "Deny",
+              "Principal": "*",
+              "Action": "s3:PutBucketAbac",
+              "Resource": "*",
+              "Condition": {
+                "Null": {
+                  "s3:BucketTag/${S3BucketTagKeyPermissive}": "false"
                 }
               }
             }

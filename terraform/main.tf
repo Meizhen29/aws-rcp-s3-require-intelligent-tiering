@@ -7,7 +7,7 @@
 resource "aws_organizations_policy" "rcp_s3_bucket_require_storage_class" {
   type        = "RESOURCE_CONTROL_POLICY"
   name        = "S3BucketRequireStorageClass-${var.rcp_scp_name_suffix}"
-  description = "S3 bucket tagged '${var.s3_bucket_tag_key_strict}': Require that all objects be created in ${var.require_s3_storage_class} storage class. ABAC must be enabled for the bucket. Bucket tagged '${var.s3_bucket_tag_key_permissive}': Override by tagging an object '${var.s3_object_tag_key_override_bucket_tag}' on creation. GPLv3, Copyright Paul Marcelin. github.com/sqlxpert"
+  description = "S3 bucket with ABAC enabled, tagged '${var.s3_bucket_tag_key_strict}': Require that all objects be created in ${var.require_s3_storage_class} storage class, forbid disabling ABAC. If tagged '${var.s3_bucket_tag_key_permissive}': Override storage class by tagging an object '${var.s3_object_tag_key_override_bucket_tag}' on creation. GPLv3, Copyright Paul Marcelin. github.com/sqlxpert"
   tags        = local.rcp_scp_tags
 
   # I prefer data.aws_iam_policy_document , but a HEREDOC allows source parity
@@ -59,6 +59,30 @@ resource "aws_organizations_policy" "rcp_s3_bucket_require_storage_class" {
           "Condition": {
             "ForAnyValue:StringEquals": {
               "aws:TagKeys": "${var.s3_object_tag_key_override_bucket_tag}"
+            }
+          }
+        },
+        {
+          "Sid": "S3BucketForbidDisablingAbacTag1",
+          "Effect": "Deny",
+          "Principal": "*",
+          "Action": "s3:PutBucketAbac",
+          "Resource": "*",
+          "Condition": {
+            "Null": {
+              "s3:BucketTag/${var.s3_bucket_tag_key_strict}": "false"
+            }
+          }
+        },
+        {
+          "Sid": "S3BucketForbidDisablingAbacTag2",
+          "Effect": "Deny",
+          "Principal": "*",
+          "Action": "s3:PutBucketAbac",
+          "Resource": "*",
+          "Condition": {
+            "Null": {
+              "s3:BucketTag/${var.s3_bucket_tag_key_permissive}": "false"
             }
           }
         }
