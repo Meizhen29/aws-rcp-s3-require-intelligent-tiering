@@ -388,7 +388,7 @@ organizational units to prevent non-exempt roles from enabling or disabling
 ABAC for any S3 bucket. The policy also prevents non-exempt roles from
 adding/changing/removing the strict and permissive bucket tags, if ABAC is
 enabled for the bucket. **The lack of such a control undermines the security of
-most real-world ABAC application.**
+most real-world ABAC applications.**
 
 Test the SCP before applying it, because it generally reduces existing S3
 permissions. Human users or automated processes might rely on those
