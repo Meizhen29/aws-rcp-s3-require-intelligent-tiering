@@ -539,7 +539,8 @@ Testing the SCP requires two roles, one role that is exempt from the SCP and
 another that is subject to it. Both roles must be in the same AWS account, and
 they must meet the requirements in
 [Test Setup](#test-setup),
-above.
+above. Because the test process requires switching back and forth, steps that
+require the exempt role are marked _(SCP-exempt role)_, below.
 
 The SCP test scripts default to using the AWS account number and the UTC date
 to generate a unique S3 bucket name prefix. Because the scripts might be
@@ -551,7 +552,7 @@ prefix.
 To test the SCP,
 
  1. Assume the role that is exempt from the SCP.
- 2. Clone the repository and create the test S3 buckets.
+ 2. _(SCP-exempt role)_ Clone the repository and create the test S3 buckets.
 
     ```shell
     cd /tmp
@@ -577,7 +578,7 @@ To test the SCP,
     ```
 
  6. Assume the role that is exempt from the SCP.
- 7. Enable ABAC for the test buckets.
+ 7. _(SCP-exempt role)_ Enable ABAC for the test buckets.
 
     ```shell
     ./12test-scp-s3-bucket-restrict-tag-and-abac-changes.bash
@@ -628,22 +629,21 @@ To test the SCP,
     - `-both-tags`
 
 16. Assume the role that is exempt from the SCP.
-
-17. Delete the test buckets.
+17. _(SCP-exempt role)_ Delete the test buckets.
 
     ```shell
     ./18test-scp-s3-bucket-restrict-tag-and-abac-changes.bash
     ```
 
-Unfortunately, as of March,&nbsp;2026, the AWS CLI includes the old S3 tagging
-command for non-ABAC-enabled buckets,
+Unfortunately, as of March,&nbsp;2026, the AWS CLI includes the old command for
+tagging non-ABAC-enabled S3 buckets,
 [`aws s3api put-bucket-tagging`](https://docs.aws.amazon.com/cli/latest/reference/s3api/put-bucket-tagging.html)&nbsp;,
-but no new S3 tagging commands for ABAC-enabled buckets.
+but no new commands for tagging ABAC-enabled buckets.
 [`aws resourcegroupstaggingapi tag-resources`](https://docs.aws.amazon.com/cli/latest/reference/resourcegroupstaggingapi/tag-resources.html)
 also lacks support for ABAC-enabled S3 buckets. Hopefully,
 ~`aws s3api tag-resource`~ and ~`aws s3api untag-resource`~ commands will be
-added to the CLI, saving the effort of writing and maintaining a program just
-for the sake of calling two new AWS API methods!
+added to the CLI, saving the effort of writing and maintaining a test program
+just for the sake of calling two new AWS API methods!
 
 </details>
 
