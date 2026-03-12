@@ -321,8 +321,8 @@ and 2025.
   "-override-with-object-tag" in one of the bucket's two tags.
 - To prevent confusion, the RCP forbids applying
   `cost-s3-override-storage-class-intelligent-tiering` to any bucket with
-  attribute-based access control enabled. This tag is meant for objects. It has
-  no effect on a bucket.
+  attribute-based access control enabled. This tag is meant for new objects. It
+  has no effect on a bucket.
 
 <details>
   <summary>Resource control policy technical details...</summary>
@@ -434,7 +434,7 @@ but in buckets for seldom-accessed logs, you might require that all objects be
 created in `GLACIER_IR` storage class (low storage price, high retrieval
 charge), or even in
 [`DEEP_ARCHIVE`](https://builder.aws.com/content/38nzuuU92cmS7nEhDEZNrhjAtG5/save-more-on-s3-storage-by-implementing-asynchronous-retrieval)
-(very low storage price, two-step asynchronous retrieval). Perhaps you have
+(very low storage price, two-step asynchronous retrieval). Or, perhaps you have
 some buckets whose objects are always frequently-accessed and short-lived, and
 you want to be sure that objects can only be created in `STANDARD` class.
 
