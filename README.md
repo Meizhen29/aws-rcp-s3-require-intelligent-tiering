@@ -104,7 +104,7 @@ and 2025.
     A resource control policy won't break existing systems, because an existing
     bucket is excluded until it is tagged and its ABAC setting is enabled.
 
-    November&nbsp;20,&nbsp;2025:
+    November,&nbsp;2025:
     [Amazon S3 now supports attribute-based access control](https://aws.amazon.com/about-aws/whats-new/2025/11/amazon-s3-attribute-based-access-control)
 
  2. S3 errors now mention the type of policy. If users miss
@@ -112,7 +112,7 @@ and 2025.
     check AWS&nbsp;Organizations because the error message mentions "a resource
     control policy".
 
-    June&nbsp;16,&nbsp;2025:
+    June,&nbsp;2025:
     [Amazon S3 extends additional context for HTTP 403 Access Denied error messages to AWS Organizations](https://aws.amazon.com/about-aws/whats-new/2025/06/amazon-s3-context-http-403-access-denied-error-message-aws-organizations)
 
     - &#129668; S3 wish list: If AWS extended a related feature, S3 error
@@ -123,14 +123,14 @@ and 2025.
       would be more informative than "a resource control policy", but still not
       perfect.)
 
-      January&nbsp;21,&nbsp;2026:
+      January,&nbsp;2026:
       [AWS introduces additional policy details to access denied error messages](https://aws.amazon.com/about-aws/whats-new/2026/01/additional-policy-details-access-denied-error)
 
  3. One resource control policy can cover all S3 buckets in one or more AWS
     accounts. It's no longer necessary to edit the bucket policy for each
     individual bucket and check for drift.
 
-    November&nbsp;13,&nbsp;2024:
+    November,&nbsp;2024:
     [Introducing resource control policies (RCPs) to centrally restrict access to AWS resources](https://aws.amazon.com/about-aws/whats-new/2024/11/resource-control-policies-restrict-access-aws-resources)
 
  4. The `s3:x-amz-storage-class` condition key makes it possible to restrict
@@ -141,16 +141,16 @@ and 2025.
     service control policies that can cover all roles in one or more accounts.
     Much later, AWS relaxed limitations on conditions in SCPs.
 
-    February&nbsp;11,&nbsp;2015:
+    February,&nbsp;2015:
     [AWS Identity and Access Management simplifies policy management](https://aws.amazon.com/about-aws/whats-new/2015/02/11/aws-identity-and-access-management-simplifies-policy-management)
 
-    December&nbsp;14,&nbsp;2015:
+    December,&nbsp;2015:
     [IAM policies now support an Amazon S3 s3:x-amz-storage-class condition key](https://docs.aws.amazon.com/AmazonS3/latest/userguide/WhatsNew.html#WhatsNew-earlier-doc-history:~:text=IAM%20policies%20now%20support,condition%20key.)
 
-    February&nbsp;27,&nbsp;2017:
+    February,&nbsp;2017:
     [AWS Organizations Now Generally Available](https://aws.amazon.com/about-aws/whats-new/2017/02/aws-organizations-now-generally-available)
 
-    September&nbsp;19,&nbsp;2025:
+    September,&nbsp;2025:
     [AWS Organizations supports full IAM policy language for service control policies (SCPs)](https://aws.amazon.com/about-aws/whats-new/2025/09/aws-organizations-iam-language-service-control-policies)
 
     - To understand why not even SCPs provided a sufficient policy scope for
